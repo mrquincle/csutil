@@ -6,6 +6,7 @@ import json
 import asyncio
 
 from crownstone_ble import CrownstoneBle
+from crownstone_core.Exceptions import CrownstoneBleException
 from crownstone_core.Enums import CrownstoneOperationMode
 
 parser = argparse.ArgumentParser(description='Search for any Crownstone and print their information')
