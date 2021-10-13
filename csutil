@@ -3,8 +3,10 @@
 import time
 import argparse
 import json
+import asyncio
 
-from crownstone_ble import CrownstoneBle, ScanBackends
+from crownstone_ble import CrownstoneBle
+from crownstone_core.Enums import CrownstoneOperationMode
 
 parser = argparse.ArgumentParser(description='Search for any Crownstone and print their information')
 parser.add_argument('--hciIndex', dest='hciIndex', metavar='I', type=int, nargs='?', default=0,
@@ -24,22 +26,22 @@ args = parser.parse_args()
 print("===========================================\n\ncsutil\n\n===========================================")
 
 # Initialize the Bluetooth Core.
-core = CrownstoneBle(hciIndex=args.hciIndex)
+core = CrownstoneBle()
 core.loadSettingsFromFile(args.keyFile)
 
 address = args.macAddress.lower()
 
-def setup():
+async def setup():
     print("Setup Crownstone at address:", address)
 
-    if not core.isCrownstoneInSetupMode(address):
+    if not await core.getMode(address) == CrownstoneOperationMode.SETUP:
        print("Crownstone is not in setup mode")
        return
 
     with open(args.configFile) as f:
         config = json.load(f)
 
-    core.setupCrownstone(
+    await core.setupCrownstone(
         address,
         crownstoneId = config['crownstoneId'],
         sphereId = config['sphereId'],
@@ -53,10 +55,10 @@ def setup():
     print("Sleeping until Crownstone is in Normal mode and ready.")
     time.sleep(10)
 
-def factory_reset():
+async def factory_reset():
 
     # Crownstone should not already be in setup mode
-    if core.isCrownstoneInSetupMode(address):
+    if not await core.getMode(address) == CrownstoneOperationMode.NORMAL:
        print("Crownstone is not in normal mode")
        return
 
@@ -73,12 +75,12 @@ def factory_reset():
     time.sleep(1)
 
 if args.action == 'setup':
-    setup()
+    asyncio.run(setup())
 
 if args.action == 'factory_reset':
-    factory_reset()
+    asyncio.run(factory_reset())
 
 # clean up all pending processes
 print("Core shutdown")
-core.shutDown()
+asyncio.run(core.shutDown())
 
