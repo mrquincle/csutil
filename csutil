@@ -41,19 +41,24 @@ async def setup():
     with open(args.configFile) as f:
         config = json.load(f)
 
-    await core.setupCrownstone(
-        address,
-        crownstoneId = config['crownstoneId'],
-        sphereId = config['sphereId'],
-        meshDeviceKey = config['meshDeviceKey'],
-        ibeaconUUID = config['ibeaconUUID'],
-        ibeaconMajor = config['ibeaconMajor'],
-        ibeaconMinor = config['ibeaconMinor']
-    )
+    try:
+        await core.setupCrownstone(
+            address,
+            crownstoneId = config['crownstoneId'],
+            sphereId = config['sphereId'],
+            meshDeviceKey = config['meshDeviceKey'],
+            ibeaconUUID = config['ibeaconUUID'],
+            ibeaconMajor = config['ibeaconMajor'],
+            ibeaconMinor = config['ibeaconMinor']
+        )
+    except CrownstoneBleException as e:
+        print("Something went wrong with the notifications", e)
 
-    # wait for setup to finish and the crownstone to reboot
-    print("Sleeping until Crownstone is in Normal mode and ready.")
-    time.sleep(10)
+    # Wait for setup to finish and the crownstone to reboot in normal mode.
+    if await core.waitForMode(address, CrownstoneOperationMode.NORMAL, scanDuration=10):
+        await asyncio.sleep(1)
+    else:
+        print("Something went wrong? Crownstone didn't come in normal mode")
 
 async def factory_reset():
 
