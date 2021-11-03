@@ -35,9 +35,12 @@ address = args.macAddress.lower()
 async def setup():
     print("Setup Crownstone at address:", address)
 
-    if not await core.getMode(address) == CrownstoneOperationMode.SETUP:
-       print("Crownstone is not in setup mode")
-       return
+    try:
+        print(f"Waiting for Crownstone to show up in setup mode...")
+        await core.waitForMode(address, CrownstoneOperationMode.SETUP, scanDuration=10)
+    except (CrownstoneException, CrownstoneBleException) as e:
+        print(f"Did not see the Crownstone in setup mode: {e}")
+        return
 
     with open(args.configFile) as f:
         config = json.load(f)
@@ -55,26 +58,39 @@ async def setup():
     except CrownstoneBleException as e:
         print("Something went wrong with the notifications", e)
 
-    # Wait for setup to finish and the crownstone to reboot in normal mode.
-    if await core.waitForMode(address, CrownstoneOperationMode.NORMAL, scanDuration=10):
-        await asyncio.sleep(1)
-    else:
-        print("Something went wrong? Crownstone didn't come in normal mode")
+
+    try:
+        print(f"Waiting for Crownstone to reboot and show up in normal mode...")
+        await core.waitForMode(address, CrownstoneOperationMode.NORMAL, scanDuration=10)
+        print(f"Success!")
+    except (CrownstoneException, CrownstoneBleException) as e:
+        print(f"Did not see the Crownstone in normal mode, setup up probably failed: {e}")
 
 async def factory_reset():
 
     # Crownstone should not already be in setup mode
-    if not await core.getMode(address) == CrownstoneOperationMode.NORMAL:
-       print("Crownstone is not in normal mode")
-       return
+    try:
+        print(f"Search for Crownstone to show up in normal mode...")
+        await core.waitForMode(address, CrownstoneOperationMode.NORMAL, scanDuration=10)
+        print(f"Success!")
+    except (CrownstoneException, CrownstoneBleException) as e:
+        print(f"Did not see the Crownstone in normal mode")
+        return
 
     # reset the Crownstone back into setup mode
-    print("Make a connection")
-    core.connect(address)
+    print(f"Connecting...")
+    await core.connect(nearestStone.address)
 
-    print("Perform factory reset")
-    core.control.commandFactoryReset()
-    time.sleep(1)
+    print(f"Connected, perform factory reset.")
+    await core.control.commandFactoryReset()
+    print(f"Factory reset complete!")
+
+    try:
+        print(f"Waiting for Crownstone to reboot and show up in setup mode...")
+        await core.waitForMode(address, CrownstoneOperationMode.SETUP, scanDuration=10)
+    except (CrownstoneException, CrownstoneBleException) as e:
+        print(f"Did not see the Crownstone back in setup mode: {e}")
+        return
 
     print("Disconnect")
     core.control.disconnect()
