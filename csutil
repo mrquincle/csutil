@@ -89,7 +89,7 @@ async def factory_reset():
 
     # reset the Crownstone back into setup mode
     print(f"Connecting...")
-    await core.connect(nearestStone.address)
+    await core.connect(address)
 
     print(f"Connected, perform factory reset.")
     await core.control.commandFactoryReset()
