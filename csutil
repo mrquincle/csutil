@@ -6,7 +6,7 @@ import json
 import asyncio
 
 from crownstone_ble import CrownstoneBle
-from crownstone_core.Exceptions import CrownstoneBleException
+from crownstone_core.Exceptions import CrownstoneException, CrownstoneBleException
 from crownstone_core.Enums import CrownstoneOperationMode
 
 parser = argparse.ArgumentParser(description='Search for any Crownstone and print their information')
@@ -33,6 +33,16 @@ core.loadSettingsFromFile(args.keyFile)
 address = args.macAddress.lower()
 
 async def setup():
+
+    try:
+        print(f"Do some BLE scanning to check if that works on this system")
+        visibleCrownstones = await core.getCrownstonesByScanning(scanDuration=3)
+        for crownstone in visibleCrownstones:
+            print("- " + crownstone['address'])
+    except (CrownstoneException, CrownstoneBleException) as e:
+        print(f"Some error: {e}")
+        return
+
     print("Setup Crownstone at address:", address)
 
     try:
