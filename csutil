@@ -102,10 +102,6 @@ async def factory_reset():
         print(f"Did not see the Crownstone back in setup mode: {e}")
         return
 
-    print("Disconnect")
-    core.control.disconnect()
-    time.sleep(1)
-
 if args.action == 'setup':
     asyncio.run(setup())
 
